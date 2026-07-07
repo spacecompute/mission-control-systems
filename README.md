@@ -1,4 +1,4 @@
-# TNC
+# Mission Control Systems
 
 Container images for spacecraft mission control systems. Multi-arch (amd64/arm64), published to GitHub Container Registry.
 
@@ -6,18 +6,18 @@ Container images for spacecraft mission control systems. Multi-arch (amd64/arm64
 
 | Image | Base | Description |
 |-------|------|-------------|
-| `ghcr.io/spacecompute/tnc/yamcs` | maven:3.9.9-eclipse-temurin-17 | [Yamcs](https://yamcs.org) mission control server |
-| `ghcr.io/spacecompute/tnc/openmct` | ubuntu:25.04 + Node.js 24 | [OpenMCT](https://github.com/nasa/openmct) web telemetry UI with Yamcs plugin |
-| `ghcr.io/spacecompute/tnc/jupyter` | jupyterhub:5 | JupyterHub with Python, Ruby, Perl, R, Gnuplot, and Octave kernels |
-| `ghcr.io/spacecompute/tnc/sle` | maven:3.9.9-eclipse-temurin-17 | [jSLE](https://github.com/yamcs/jsle) Space Link Extension provider |
+| `ghcr.io/spacecompute/mission-control-systems/yamcs` | maven:3.9.9-eclipse-temurin-17 | [Yamcs](https://yamcs.org) mission control server |
+| `ghcr.io/spacecompute/mission-control-systems/openmct` | ubuntu:25.04 + Node.js 24 | [OpenMCT](https://github.com/nasa/openmct) web telemetry UI with Yamcs plugin |
+| `ghcr.io/spacecompute/mission-control-systems/jupyter` | jupyterhub:5 | JupyterHub with Python, Ruby, Perl, R, Gnuplot, and Octave kernels |
+| `ghcr.io/spacecompute/mission-control-systems/sle` | maven:3.9.9-eclipse-temurin-17 | [jSLE](https://github.com/yamcs/jsle) Space Link Extension provider |
 
 ## Usage
 
 ```bash
-docker pull ghcr.io/spacecompute/tnc/yamcs:latest
-docker pull ghcr.io/spacecompute/tnc/openmct:latest
-docker pull ghcr.io/spacecompute/tnc/jupyter:latest
-docker pull ghcr.io/spacecompute/tnc/sle:latest
+docker pull ghcr.io/spacecompute/mission-control-systems/yamcs:latest
+docker pull ghcr.io/spacecompute/mission-control-systems/openmct:latest
+docker pull ghcr.io/spacecompute/mission-control-systems/jupyter:latest
+docker pull ghcr.io/spacecompute/mission-control-systems/sle:latest
 ```
 
 These are base images. Mission-specific repos extend them with XTCE databases, display configs, procedures, and compose orchestration.
