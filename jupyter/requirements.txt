@@ -1,0 +1,45 @@
+# ── Yamcs ─────────────────────────────────────────────────────────────
+yamcs-cli
+yamcs-client
+yamcs-pymdb
+
+# ── Space / Telemetry ─────────────────────────────────────────────────
+astropy
+ccsdspy
+spacepackets
+spiceypy
+utdfpy
+
+# ── Data ──────────────────────────────────────────────────────────────
+numpy
+pandas
+polars
+pyarrow
+scipy
+xarray
+
+# ── Visualization ─────────────────────────────────────────────────────
+matplotlib
+plotly
+seaborn
+
+# ── Notebook ──────────────────────────────────────────────────────────
+ipywidgets
+jupyterlab-git
+jupytext>=1.16.0
+tabulate
+tqdm
+
+# ── Storage / IO ──────────────────────────────────────────────────────
+boto3
+h5py
+pyiceberg[glue]
+pyyaml
+
+# ── Database ──────────────────────────────────────────────────────────
+mysql-connector-python
+psycopg2-binary
+
+# ── Network / Utilities ───────────────────────────────────────────────
+requests
+uritools

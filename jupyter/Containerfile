@@ -1,0 +1,58 @@
+FROM quay.io/jupyterhub/jupyterhub:5
+
+# System runtimes and dev libraries for additional kernels
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libzmq3-dev libffi-dev libcurl4-openssl-dev libssl-dev build-essential \
+    ruby ruby-dev \
+    perl cpanminus \
+    gnuplot ghostscript \
+    r-base r-base-dev \
+    octave \
+    && rm -rf /var/lib/apt/lists/*
+
+# Pip-installable kernel packages
+RUN pip install --no-cache-dir \
+    gnuplot_kernel \
+    octave_kernel
+
+# Ruby kernel (register to system prefix so JupyterHub users can see it)
+RUN gem install iruby && \
+    iruby register --force && \
+    mkdir -p /usr/local/share/jupyter/kernels && \
+    cp -r /root/.local/share/jupyter/kernels/ruby3 /usr/local/share/jupyter/kernels/
+
+# Perl kernel (register to system prefix)
+RUN cpanm --notest Devel::IPerl && \
+    iperl --version && \
+    mkdir -p /usr/local/share/jupyter/kernels/iperl && \
+    echo '{"display_name":"Perl","language":"perl","argv":["iperl","kernel","{connection_file}"]}' \
+        > /usr/local/share/jupyter/kernels/iperl/kernel.json
+
+# R kernel (user=FALSE installs system-wide)
+RUN R --slave -e "install.packages('IRkernel', repos='https://cloud.r-project.org'); IRkernel::installspec(user=FALSE)"
+
+# Gnuplot kernel registration (--sys-prefix for system-wide)
+RUN python -m gnuplot_kernel install --sys-prefix
+
+# Octave kernel registration (--sys-prefix for system-wide)
+RUN python -m octave_kernel install --sys-prefix
+
+# Core infrastructure (baked into image)
+RUN pip install --no-cache-dir \
+    jupyterlab \
+    jupyter-collaboration \
+    jupyterhub-idle-culler
+
+# Science/data packages
+COPY requirements.txt /tmp/requirements.txt
+RUN if [ -f /tmp/requirements.txt ]; then \
+        pip install --no-cache-dir -r /tmp/requirements.txt; \
+    fi && rm -f /tmp/requirements.txt
+
+WORKDIR /opt/jupyter
+
+# Default entrypoint and config (missions override via volume mount)
+COPY entrypoint.sh /opt/jupyter/entrypoint.sh
+COPY jupyterhub_config.py /opt/jupyter/jupyterhub_config.py
+
+CMD ["/opt/jupyter/entrypoint.sh"]

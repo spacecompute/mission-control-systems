@@ -1,0 +1,45 @@
+version: '3'
+
+vars:
+  WORKFLOW: .github/workflows/build-images.yaml
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+
+  build:
+    desc: Build all images locally via act
+    cmds:
+      - act push -W {{.WORKFLOW}} -j build --container-architecture linux/arm64
+
+  build:yamcs:
+    desc: Build yamcs image locally
+    cmds:
+      - act push -W {{.WORKFLOW}} -j build --container-architecture linux/arm64 --matrix image:yamcs
+
+  build:openmct:
+    desc: Build openmct image locally
+    cmds:
+      - act push -W {{.WORKFLOW}} -j build --container-architecture linux/arm64 --matrix image:openmct
+
+  build:jupyter:
+    desc: Build jupyter image locally
+    cmds:
+      - act push -W {{.WORKFLOW}} -j build --container-architecture linux/arm64 --matrix image:jupyter
+
+  build:sle:
+    desc: Build sle image locally
+    cmds:
+      - act push -W {{.WORKFLOW}} -j build --container-architecture linux/arm64 --matrix image:sle
+
+  build:dry:
+    desc: Dry-run — validate workflow without building
+    cmds:
+      - act push -W {{.WORKFLOW}} -j build --dryrun
+
+  graph:
+    desc: Show workflow graph
+    cmds:
+      - act push -W {{.WORKFLOW}} --graph
