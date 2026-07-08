@@ -52,7 +52,7 @@ RUN if [ -f /tmp/requirements.txt ]; then \
 WORKDIR /opt/jupyter
 
 # Default entrypoint and config (missions override via volume mount)
-COPY entrypoint.sh /opt/jupyter/entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
 COPY jupyterhub_config.py /opt/jupyter/jupyterhub_config.py
 
-CMD ["/opt/jupyter/entrypoint.sh"]
+CMD ["/entrypoint.sh"]

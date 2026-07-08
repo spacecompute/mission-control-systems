@@ -62,6 +62,8 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Default entrypoint, index.js, and webpack config (missions override via volume mount)
-COPY entrypoint.sh /opt/openmct/entrypoint.sh
+COPY entrypoint.sh /entrypoint.sh
 COPY index.js /opt/openmct/example/index.js
 COPY webpack.dev.mjs /opt/openmct/.webpack/webpack.dev.mjs
+
+CMD ["/entrypoint.sh"]

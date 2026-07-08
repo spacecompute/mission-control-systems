@@ -18,6 +18,7 @@ spec:
         - name: jupyter
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/entrypoint.sh"]
           ports:
             - name: http
               containerPort: 8000
@@ -30,12 +31,19 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- with .Values.extraVolumeMounts }}
           volumeMounts:
+            - name: entrypoint
+              mountPath: /entrypoint.sh
+              subPath: entrypoint.sh
+          {{- with .Values.extraVolumeMounts }}
             {{- toYaml . | nindent 12 }}
           {{- end }}
-      {{- with .Values.extraVolumes }}
       volumes:
+        - name: entrypoint
+          configMap:
+            name: {{ include "jupyter.fullname" . }}-entrypoint
+            defaultMode: 0755
+      {{- with .Values.extraVolumes }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.nodeSelector }}

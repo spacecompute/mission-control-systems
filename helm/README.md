@@ -29,7 +29,7 @@ image:
 
 extraVolumeMounts:
   - name: xtce
-    mountPath: /yamcs/mdb
+    mountPath: /opt/yamcs/mdb
 
 extraVolumes:
   - name: xtce
@@ -49,12 +49,17 @@ Every chart exposes these values for mission-specific customization:
 | Value | Purpose |
 |-------|---------|
 | `image.repository` / `image.tag` | Use a mission-specific image |
-| `extraEnv` | Inject environment variables |
+| `env.*` | Proxy and deployment environment variables (see below) |
+| `extraEnv` | Inject additional environment variables |
 | `extraVolumes` / `extraVolumeMounts` | Mount XTCE databases, procedures, configs |
 | `resources` | Set CPU/memory requests and limits |
 | `nodeSelector` / `tolerations` / `affinity` | Control pod scheduling |
 
+All charts (except jupyter) expose common env vars: `MAVEN_HTTPS_PROXY`, `HTTPS_PROXY`, `HTTP_PROXY`, `NO_PROXY`, `DEPLOYMENT_ENVIRO`.
+
 OpenMCT additionally exposes `env.YAMCS_INSTANCE`, `env.YAMCS_PROCESSOR`, and `env.YAMCS_FOLDER`.
+
+Each chart includes a ConfigMap-based entrypoint script that can be overridden per mission via `extraVolumes`/`extraVolumeMounts`.
 
 ## Local development
 

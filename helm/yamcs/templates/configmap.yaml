@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "yamcs.fullname" . }}-entrypoint
+  labels:
+    {{- include "yamcs.labels" . | nindent 4 }}
+data:
+  entrypoint.sh: |
+    #!/usr/bin/env bash
+    # Explicit cd — WORKDIR is not guaranteed when overridden via Helm ConfigMap
+    cd /opt/yamcs
+    mvn ${MAVEN_HTTPS_PROXY} yamcs:run -Dmaven.repo.local=/opt/yamcs/.m2/repository

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sle.fullname" . }}-entrypoint
+  labels:
+    {{- include "sle.labels" . | nindent 4 }}
+data:
+  entrypoint.sh: |
+    #!/usr/bin/env bash
+    # Explicit cd — WORKDIR is not guaranteed when overridden via Helm ConfigMap
+    cd /opt/jsle
+    mvn ${MAVEN_HTTPS_PROXY} exec:java -Dmaven.repo.local=/opt/jsle/.m2/repository

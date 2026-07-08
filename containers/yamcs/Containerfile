@@ -26,17 +26,22 @@ RUN apt-get update && \
       apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-WORKDIR /
+WORKDIR /opt
 
 # Clone yamcs to get a base pom.xml for dependency resolution
 RUN git clone -b ${GIT_COMMIT} --recurse-submodules ${GIT_URL}
 
-WORKDIR /yamcs/
+WORKDIR /opt/yamcs/
 
 # Maven settings (stub by default, proxy settings for restricted environments)
-COPY settings.xm[l] /yamcs/
-RUN test -f /yamcs/settings.xml || \
-    echo "<settings><proxies></proxies></settings>" > /yamcs/settings.xml
+COPY settings.xm[l] /opt/yamcs/
+RUN test -f /opt/yamcs/settings.xml || \
+    echo "<settings><proxies></proxies></settings>" > /opt/yamcs/settings.xml
 
 # Compile and resolve dependencies (exec:java handles classpath via Maven)
-RUN mvn ${MAVEN_HTTPS_PROXY} compile -DskipTests -Dmaven.repo.local=/yamcs/.m2/repository
+RUN mvn ${MAVEN_HTTPS_PROXY} compile -DskipTests -Dmaven.repo.local=/opt/yamcs/.m2/repository
+
+# Default entrypoint (missions override via volume mount)
+COPY entrypoint.sh /entrypoint.sh
+
+CMD ["/entrypoint.sh"]

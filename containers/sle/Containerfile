@@ -26,16 +26,21 @@ RUN apt-get update && \
       apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-WORKDIR /yamcs/
+WORKDIR /opt/
 
 RUN git clone -b ${GIT_COMMIT} --recurse-submodules ${GIT_URL}
 
-WORKDIR /yamcs/jsle
+WORKDIR /opt/jsle
 
 # Maven settings (stub by default, proxy settings for restricted environments)
-COPY settings.xm[l] /yamcs/jsle/
-RUN test -f /yamcs/jsle/settings.xml || \
-    echo "<settings><proxies></proxies></settings>" > /yamcs/jsle/settings.xml
+COPY settings.xm[l] /opt/jsle/
+RUN test -f /opt/jsle/settings.xml || \
+    echo "<settings><proxies></proxies></settings>" > /opt/jsle/settings.xml
 
 # Compile and resolve dependencies (exec:java handles classpath via Maven)
 RUN mvn ${MAVEN_HTTPS_PROXY} compile -DskipTests
+
+# Default entrypoint (missions override via volume mount)
+COPY entrypoint.sh /entrypoint.sh
+
+CMD ["/entrypoint.sh"]

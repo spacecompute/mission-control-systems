@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "openmct.fullname" . }}-entrypoint
+  labels:
+    {{- include "openmct.labels" . | nindent 4 }}
+data:
+  entrypoint.sh: |
+    #!/usr/bin/env bash
+    # Explicit cd — WORKDIR is not guaranteed when overridden via Helm ConfigMap
+    cd /opt/openmct
+    pkill -f node
+    pkill -f npm
+    npm start
+    tail -f /dev/null

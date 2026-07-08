@@ -5,6 +5,13 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
+env:
+  MAVEN_HTTPS_PROXY: ""
+  HTTPS_PROXY: ""
+  HTTP_PROXY: ""
+  NO_PROXY: ""
+  DEPLOYMENT_ENVIRO: ""
+
 service:
   type: ClusterIP
   port: 5100
