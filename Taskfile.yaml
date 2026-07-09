@@ -2,8 +2,9 @@ version: '3'
 
 vars:
   CONTAINER_BIN: docker
+  REGISTRY_HOST: ghcr.io
   IMAGE_PREFIX:
-    sh: echo "ghcr.io/$(git remote get-url origin | sed 's|.*github.com[:/]||; s|\.git$||')"
+    sh: echo "{{.REGISTRY_HOST}}/$(git remote get-url origin | sed 's|.*github.com[:/]||; s|\.git$||')"
   # act — run GitHub Actions locally: https://github.com/nektos/act
   WORKFLOW: .github/workflows/build-images.yaml
   ACT_IMAGE: catthehacker/ubuntu:act-latest
@@ -122,6 +123,34 @@ tasks:
     desc: Lint sle chart
     cmds:
       - helm lint helm/sle
+
+  helm:package:
+    desc: Package all Helm charts
+    deps:
+      - task: helm:package:yamcs
+      - task: helm:package:openmct
+      - task: helm:package:jupyter
+      - task: helm:package:sle
+
+  helm:package:yamcs:
+    desc: Package yamcs chart
+    cmds:
+      - helm package helm/yamcs -d dist/
+
+  helm:package:openmct:
+    desc: Package openmct chart
+    cmds:
+      - helm package helm/openmct -d dist/
+
+  helm:package:jupyter:
+    desc: Package jupyter chart
+    cmds:
+      - helm package helm/jupyter -d dist/
+
+  helm:package:sle:
+    desc: Package sle chart
+    cmds:
+      - helm package helm/sle -d dist/
 
   helm:template:
     desc: Render all chart templates locally

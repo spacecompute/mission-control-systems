@@ -66,5 +66,6 @@ Each chart includes a ConfigMap-based entrypoint script that can be overridden p
 ```bash
 task helm:lint          # lint all charts
 task helm:lint:yamcs    # lint one chart
+task helm:package       # package all charts into dist/
 task helm:template      # render all templates locally
 ```

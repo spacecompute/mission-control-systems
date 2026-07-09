@@ -1,7 +1,7 @@
 ---
 name: helm
 description: Manage Helm charts for Kubernetes deployment. Lint, template, and publish charts as OCI artifacts to GHCR.
-argument-hint: [lint | template | lint:yamcs | lint:openmct | lint:jupyter | lint:sle]
+argument-hint: [lint | template | package | lint:yamcs | lint:openmct | lint:jupyter | lint:sle]
 ---
 
 # Helm Chart Management
@@ -24,6 +24,14 @@ task helm:lint:openmct
 task helm:lint:jupyter
 task helm:lint:sle
 ```
+
+### `package` — Package all charts
+
+```bash
+task helm:package
+```
+
+Packages all charts into `dist/` as `.tgz` archives, matching the CI workflow's `helm package` step.
 
 ### `template` — Render all templates locally
 
