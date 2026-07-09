@@ -69,41 +69,17 @@ tasks:
     cmds:
       - helm lint helm/yamcs helm/openmct helm/jupyter helm/sle helm/mission-control
 
-  helm:lint:yamcs:
-    desc: Lint yamcs chart
-    cmds:
-      - helm lint helm/yamcs
-
-  helm:lint:openmct:
-    desc: Lint openmct chart
-    cmds:
-      - helm lint helm/openmct
-
-  helm:lint:jupyter:
-    desc: Lint jupyter chart
-    cmds:
-      - helm lint helm/jupyter
-
-  helm:lint:sle:
-    desc: Lint sle chart
-    cmds:
-      - helm lint helm/sle
-
-  helm:deps:
-    desc: Update Helm chart dependencies for umbrella chart
-    cmds:
-      - helm dependency update helm/mission-control
-
   helm:package:
     desc: Package mission-control umbrella chart
-    deps: [helm:lint, helm:deps]
+    deps: [helm:lint]
     cmds:
+      - helm dependency update helm/mission-control
       - helm package helm/mission-control -d dist/
 
-  helm:template:
-    desc: Render all chart templates locally
+  helm:install:local:ingress:
+    desc: Configure local nginx ingress controller. Done once then forever available.
     cmds:
-      - helm template yamcs helm/yamcs
-      - helm template openmct helm/openmct
-      - helm template jupyter helm/jupyter
-      - helm template sle helm/sle
+      - |
+        helm upgrade --install ingress-nginx ingress-nginx \
+        --repo https://kubernetes.github.io/ingress-nginx \
+        --namespace ingress-nginx --create-namespace
