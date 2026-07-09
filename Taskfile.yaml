@@ -118,4 +118,40 @@ tasks:
       - helm template openmct helm/openmct
       - helm template jupyter helm/jupyter
       - helm template sle helm/sle
+      - helm dependency build helm/mission-control
       - helm template mission-control helm/mission-control
+
+  act:charts:
+    desc: Run publish-charts workflow locally via act (lint job only)
+    cmds:
+      - >-
+        act -j lint
+        -W .github/workflows/publish-charts.yaml
+        -P ubuntu-latest={{.ACT_IMAGE}}
+        -v
+
+  act:charts:dry:
+    desc: Dry-run publish-charts workflow locally via act
+    cmds:
+      - >-
+        act -j lint
+        -W .github/workflows/publish-charts.yaml
+        -P ubuntu-latest={{.ACT_IMAGE}}
+        -n
+
+  act:build:
+    desc: Run build-images workflow locally via act
+    cmds:
+      - >-
+        act
+        -W {{.WORKFLOW}}
+        {{.ACT_FLAGS}}
+
+  act:build:dry:
+    desc: Dry-run build-images workflow via act
+    cmds:
+      - >-
+        act
+        -W {{.WORKFLOW}}
+        {{.ACT_FLAGS}}
+        -n
