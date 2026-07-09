@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        chart: [yamcs, openmct, jupyter, sle]
+        chart: [yamcs, openmct, jupyter, sle, mission-control]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -45,7 +45,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        chart: [yamcs, openmct, jupyter, sle]
+        chart: [yamcs, openmct, jupyter, sle, mission-control]
 
     steps:
       - name: Checkout repository
