@@ -13,7 +13,13 @@ entrypoint: |
   jupyterhub -f ./jupyterhub_config.py
   tail -f /dev/null
 
-env: {}
+env:
+  PYTHONPATH: "/srv/lib/yamcs-jupyter:/srv/lib/stol-runtime:/srv/lib/yamcs-runtime"
+  YAMCS_PROTOCOL: http
+  YAMCS_HOST: yamcs
+  YAMCS_HOST_PORT: "8090"
+  YAMCS_INSTANCE: myproject
+  YAMCS_PROCESSOR: realtime
 
 service:
   type: ClusterIP
@@ -31,9 +37,21 @@ service:
 #   data:        inline content map (configMap type, optional)
 volumes: {}
 
-healthCheck: {}
+healthCheck:
+  httpGet:
+    path: /
+    port: 8000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 30
 
-resources: {}
+resources:
+  requests:
+    cpu: "250m"
+    memory: "512Mi"
+  limits:
+    cpu: "1"
+    memory: "1024Mi"
 
 nodeSelector: {}
 tolerations: []

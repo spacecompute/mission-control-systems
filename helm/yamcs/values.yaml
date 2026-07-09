@@ -12,6 +12,20 @@ entrypoint: |
   set -e
   cd /opt/yamcs
 
+  # Wait for mission data (MDB, pom.xml, etc/ copied post-deploy via kubectl cp)
+  echo "Waiting for mission configuration..."
+  for i in $(seq 1 90); do
+    if ls src/main/yamcs/mdb/*.xtce >/dev/null 2>&1; then
+      echo "Mission data found."
+      break
+    fi
+    if [ "$i" -eq 90 ]; then
+      echo "ERROR: MDB files not found after 3 minutes."
+      exit 1
+    fi
+    sleep 2
+  done
+
   # Register Yamcs plugins
   mvn ${MAVEN_HTTPS_PROXY} org.yamcs:yamcs-maven-plugin:detect \
     -Dmaven.repo.local=/opt/yamcs/.m2/repository || true

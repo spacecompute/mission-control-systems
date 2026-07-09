@@ -22,7 +22,13 @@ env:
 service:
   type: ClusterIP
   port: 5100
-  additionalPorts: []
+  additionalPorts:
+    - name: tm-udp
+      port: 1235
+      protocol: UDP
+    - name: cltu-udp
+      port: 5010
+      protocol: UDP
 
 # Volumes — each entry supports:
 #   enabled:     bool (default false)
@@ -35,9 +41,20 @@ service:
 #   data:        inline content map (configMap type, optional)
 volumes: {}
 
-healthCheck: {}
+healthCheck:
+  exec:
+    command: ["nc", "-z", "localhost", "5100"]
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  failureThreshold: 10
 
-resources: {}
+resources:
+  requests:
+    cpu: "250m"
+    memory: "256Mi"
+  limits:
+    cpu: "1"
+    memory: "512Mi"
 
 nodeSelector: {}
 tolerations: []
