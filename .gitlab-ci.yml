@@ -30,7 +30,7 @@ variables:
   services:
     - docker:27-dind
   variables:
-    DOCKER_TLS_CERTDIR: "/certs"
+    DOCKER_TLS_CERTDIR: ""
 
 .container-rules:
   rules:
