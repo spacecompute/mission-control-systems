@@ -41,6 +41,12 @@ service:
 #   data:        inline content map (configMap type, optional)
 volumes: {}
 
+podSecurityContext:
+  runAsUser: 10004
+  runAsGroup: 10004
+  fsGroup: 10004
+  runAsNonRoot: true
+
 healthCheck:
   exec:
     command: ["nc", "-z", "localhost", "5100"]

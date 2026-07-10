@@ -104,6 +104,12 @@ volumes:
     mountPath: /opt/yamcs/src/main/java/com/example/myproject
     type: emptyDir
 
+podSecurityContext:
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  runAsNonRoot: true
+
 healthCheck:
   httpGet:
     path: /

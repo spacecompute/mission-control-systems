@@ -41,6 +41,30 @@ RUN test -f /opt/yamcs/settings.xml || \
 # Compile and resolve dependencies (exec:java handles classpath via Maven)
 RUN mvn ${MAVEN_HTTPS_PROXY} compile -DskipTests -Dmaven.repo.local=/opt/yamcs/.m2/repository
 
+#--- SERVICE USER (override UID/GID at build time to match host or orchestrator)
+ARG SERVICE_UID=10001
+ARG SERVICE_GID=10001
+
+ENV SERVICE_UID=${SERVICE_UID}
+ENV SERVICE_GID=${SERVICE_GID}
+
+RUN groupadd -r -g ${SERVICE_GID} yamcs && \
+    useradd -r -u ${SERVICE_UID} -g yamcs -d /opt/yamcs -s /sbin/nologin yamcs && \
+    mkdir -p /opt/yamcs/src/main/yamcs/mdb \
+             /opt/yamcs/src/main/yamcs/etc \
+             /opt/yamcs/src/main/yamcs/incoming \
+             /opt/yamcs/src/main/yamcs/displays \
+             /opt/yamcs/src/main/yamcs/functions \
+             /opt/yamcs/src/main/resources/META-INF/services \
+             /opt/yamcs/src/main/java/com/example/myproject \
+             /opt/yamcs/target \
+             /opt/yamcs/scripts && \
+    chown -R yamcs:yamcs /opt/yamcs
+
+ENV HOME=/opt/yamcs
+ENV MAVEN_CONFIG=/opt/yamcs/.m2
+USER ${SERVICE_UID}:${SERVICE_GID}
+
 # Default entrypoint (missions override via volume mount)
 COPY entrypoint.sh /entrypoint.sh
 

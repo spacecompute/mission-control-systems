@@ -4,14 +4,11 @@ Findings from a security review of the base container images, Helm charts, CI wo
 
 ## Critical
 
-### C1. All containers run as root
+### ~~C1. All containers run as root~~ (RESOLVED)
 
-No `USER` directive in any Containerfile. No `groupadd`/`useradd` anywhere. No `runAsUser`/`runAsNonRoot` in any Helm chart. A container escape gives the attacker UID 0 on the node.
+Each Containerfile now creates a dedicated service user with configurable UID/GID (`ARG SERVICE_UID/SERVICE_GID`) and runs as that user via `USER` directive. Helm charts enforce `podSecurityContext` with `runAsNonRoot: true`.
 
-- `containers/yamcs/Containerfile`
-- `containers/sle/Containerfile`
-- `containers/openmct/Containerfile`
-- `containers/jupyter/Containerfile`
+- yamcs (10001), openmct (10002), jupyter (10003), jsle (10004)
 
 ### C2. JupyterHub uses dummy auth with hardcoded password
 
@@ -23,9 +20,9 @@ No `USER` directive in any Containerfile. No `groupadd`/`useradd` anywhere. No `
 
 ## High
 
-### H1. `sudo` installed in OpenMCT image
+### ~~H1. `sudo` installed in OpenMCT image~~ (RESOLVED)
 
-`containers/openmct/Containerfile` installs `sudo` in both `apt-get` blocks (lines 19 and 60). Directly undermines any future non-root enforcement.
+Removed `sudo` from both `apt-get` blocks in `containers/openmct/Containerfile`.
 
 ### H2. Unpinned base images
 
@@ -53,9 +50,9 @@ All Containerfiles default to `GIT_COMMIT=master`. Cloning `master` means builds
 
 All four Helm deployment templates allow the container to write anywhere on its filesystem. Writable root filesystems let an attacker drop binaries, modify configs, or persist changes.
 
-### H6. No `runAsNonRoot: true` enforcement at pod level
+### ~~H6. No `runAsNonRoot: true` enforcement at pod level~~ (RESOLVED)
 
-The deployment templates have `allowPrivilegeEscalation: false` and `capabilities.drop: [ALL]`, but without `runAsNonRoot: true`, Kubernetes will not reject a root container.
+All Helm values.yaml now include `podSecurityContext` with `runAsUser`, `runAsGroup`, `fsGroup`, and `runAsNonRoot: true`. Deployment templates wire this via `{{- with .Values.podSecurityContext }}`.
 
 ## Medium
 
@@ -114,4 +111,4 @@ No Trivy, Grype, or Snyk step in `build-images.yaml`. Vulnerabilities in base im
 | Medium | 7 | No NetworkPolicy, env credential leak, unpinned deps, seccomp |
 | Low | 4 | Dev tools in prod, masked crashes, no image scanning |
 
-The most impactful fix is **C1 + H6**: adding non-root users to Containerfiles and `runAsNonRoot: true` to deployments. That single change addresses or mitigates C1, C3, H1, H5, and L2.
+C1, H1, and H6 have been resolved. The remaining highest-impact fix is **C2**: replacing the dummy JupyterHub authenticator with a real one.

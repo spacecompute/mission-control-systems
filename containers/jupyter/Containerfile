@@ -55,4 +55,18 @@ WORKDIR /opt/jupyter
 COPY entrypoint.sh /entrypoint.sh
 COPY jupyterhub_config.py /opt/jupyter/jupyterhub_config.py
 
+#--- SERVICE USER (override UID/GID at build time to match host or orchestrator)
+ARG SERVICE_UID=10003
+ARG SERVICE_GID=10003
+
+ENV SERVICE_UID=${SERVICE_UID}
+ENV SERVICE_GID=${SERVICE_GID}
+
+RUN groupadd -r -g ${SERVICE_GID} jupyter && \
+    useradd -r -u ${SERVICE_UID} -g jupyter -d /opt/jupyter -s /sbin/nologin jupyter && \
+    mkdir -p /opt/jupyter /srv/procedures /srv/lib && \
+    chown -R jupyter:jupyter /opt/jupyter /srv/procedures /srv/lib
+
+USER ${SERVICE_UID}:${SERVICE_GID}
+
 CMD ["/entrypoint.sh"]

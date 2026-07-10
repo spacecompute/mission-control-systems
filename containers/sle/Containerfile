@@ -40,6 +40,22 @@ RUN test -f /opt/jsle/settings.xml || \
 # Compile and resolve dependencies (exec:java handles classpath via Maven)
 RUN mvn ${MAVEN_HTTPS_PROXY} compile -DskipTests
 
+#--- SERVICE USER (override UID/GID at build time to match host or orchestrator)
+ARG SERVICE_UID=10004
+ARG SERVICE_GID=10004
+
+ENV SERVICE_UID=${SERVICE_UID}
+ENV SERVICE_GID=${SERVICE_GID}
+
+RUN groupadd -r -g ${SERVICE_GID} jsle && \
+    useradd -r -u ${SERVICE_UID} -g jsle -d /opt/jsle -s /sbin/nologin jsle && \
+    mkdir -p /opt/jsle /storage/data1 && \
+    chown -R jsle:jsle /opt/jsle /storage/data1
+
+ENV HOME=/opt/jsle
+ENV MAVEN_CONFIG=/opt/jsle/.m2
+USER ${SERVICE_UID}:${SERVICE_GID}
+
 # Default entrypoint (missions override via volume mount)
 COPY entrypoint.sh /entrypoint.sh
 
