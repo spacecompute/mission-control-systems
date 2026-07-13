@@ -13,6 +13,7 @@
 
 stages:
   - build
+  - scan
   - manifest
   - lint
   - publish
@@ -90,12 +91,61 @@ build:
       - digests/
     expire_in: 1 hour
 
+scan:
+  stage: scan
+  image:
+    name: aquasecurity/trivy:latest
+    entrypoint: [""]
+  needs:
+    - job: build
+      artifacts: true
+  before_script:
+    - trivy --version
+  parallel:
+    matrix:
+      - IMAGE: [yamcs, openmct, jupyter, sle]
+        PLATFORM:
+          - linux/amd64
+          - linux/arm64
+  script:
+    - PLATFORM_SLUG=$(echo "$PLATFORM" | tr '/' '-')
+    - DIGEST=$(cat "digests/${IMAGE}-${PLATFORM_SLUG}.digest")
+    - |
+      trivy image \
+        --platform "$PLATFORM" \
+        --severity CRITICAL,HIGH \
+        --exit-code 0 \
+        --format table \
+        "${IMAGE_PREFIX}/${IMAGE}@${DIGEST}"
+    - |
+      trivy image \
+        --platform "$PLATFORM" \
+        --severity CRITICAL,HIGH \
+        --format json \
+        --output "trivy-${IMAGE}-${PLATFORM_SLUG}.json" \
+        "${IMAGE_PREFIX}/${IMAGE}@${DIGEST}"
+  artifacts:
+    paths:
+      - trivy-*.json
+    reports:
+      container_scanning: trivy-*.json
+    when: always
+    expire_in: 30 days
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        - containers/**/*
+        - .gitlab-ci.yml
+    - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
 manifest:
   extends: .dind
   stage: manifest
   needs:
     - job: build
       artifacts: true
+    - job: scan
   before_script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
     - docker buildx create --use --name multiarch --driver docker-container
