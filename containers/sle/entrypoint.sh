@@ -12,6 +12,7 @@ if [ "$(id -u)" = "0" ]; then
             chgrp -R "${SHARED_GID}" "${dir}" 2>/dev/null || true
             chmod -R g+rwX "${dir}" 2>/dev/null || true
             find "${dir}" -type d -exec chmod g+s {} + 2>/dev/null || true
+            setfacl -R -d -m g::rwX "${dir}" 2>/dev/null || true
         done
     fi
 

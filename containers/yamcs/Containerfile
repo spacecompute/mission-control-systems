@@ -22,7 +22,7 @@ ENV GIT_COMMIT=${GIT_COMMIT}
 RUN apt-get update && \
       apt-get install -y --no-install-recommends \
         netcat-traditional netcat-openbsd \
-          git jq tmux tree vim curl wget gosu && \
+          git jq tmux tree vim curl wget gosu acl && \
       apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

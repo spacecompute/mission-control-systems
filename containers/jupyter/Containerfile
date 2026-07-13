@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gnuplot ghostscript \
     r-base r-base-dev \
     octave \
-    gosu \
+    gosu acl \
     && rm -rf /var/lib/apt/lists/*
 
 # Pip-installable kernel packages
