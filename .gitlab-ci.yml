@@ -1,8 +1,9 @@
 # GitLab CI/CD pipeline — mirrors .github/workflows/build-images.yaml
 # and .github/workflows/publish-charts.yaml
 #
-# Runners must have Docker executor with privileged mode for DinD + QEMU.
-# GitLab.com shared runners support this by default.
+# Runners must have Docker executor with privileged mode for DinD.
+# amd64 and arm64 jobs run on native runners via tags.
+# Override RUNNER_TAG_AMD64 / RUNNER_TAG_ARM64 for self-hosted runners.
 #
 # Weekly rebuilds: configure a Pipeline Schedule in CI/CD > Schedules
 # targeting the default branch.
@@ -21,6 +22,8 @@ stages:
 variables:
   IMAGE_PREFIX: ${CI_REGISTRY_IMAGE}
   CHART_PREFIX: oci://${CI_REGISTRY_IMAGE}/charts
+  RUNNER_TAG_AMD64: saas-linux-medium-amd64
+  RUNNER_TAG_ARM64: saas-linux-medium-arm64
 
 # ═══════════════════════════════════════════════════════════════════════
 #  Container Images  (build-images.yaml equivalent)
@@ -46,7 +49,7 @@ variables:
     - if: $CI_PIPELINE_SOURCE == "web"
     - if: $CI_PIPELINE_SOURCE == "schedule"
 
-build:
+.build:
   extends:
     - .dind
     - .container-rules
@@ -54,14 +57,10 @@ build:
   before_script:
     - apk add --no-cache jq
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-    - docker run --privileged --rm tonistiigi/binfmt --install all
-    - docker buildx create --use --name multiarch --driver docker-container
+    - docker buildx create --use --name native --driver docker-container
   parallel:
     matrix:
       - IMAGE: [yamcs, openmct, jupyter, sle]
-        PLATFORM:
-          - linux/amd64
-          - linux/arm64
   script:
     - PLATFORM_SLUG=$(echo "$PLATFORM" | tr '/' '-')
     - |
@@ -91,13 +90,27 @@ build:
       - digests/
     expire_in: 1 hour
 
+build-amd64:
+  extends: .build
+  tags: [${RUNNER_TAG_AMD64}]
+  variables:
+    PLATFORM: linux/amd64
+
+build-arm64:
+  extends: .build
+  tags: [${RUNNER_TAG_ARM64}]
+  variables:
+    PLATFORM: linux/arm64
+
 scan:
   stage: scan
   image:
     name: aquasecurity/trivy:latest
     entrypoint: [""]
   needs:
-    - job: build
+    - job: build-amd64
+      artifacts: true
+    - job: build-arm64
       artifacts: true
   before_script:
     - trivy --version
@@ -143,7 +156,9 @@ manifest:
   extends: .dind
   stage: manifest
   needs:
-    - job: build
+    - job: build-amd64
+      artifacts: true
+    - job: build-arm64
       artifacts: true
     - job: scan
   before_script:
