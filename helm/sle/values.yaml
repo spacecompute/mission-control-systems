@@ -45,6 +45,7 @@ podSecurityContext:
   runAsUser: 10004
   runAsGroup: 10004
   fsGroup: 10004
+  supplementalGroups: [10000]
   runAsNonRoot: true
 
 healthCheck:

@@ -11,6 +11,17 @@ if [ "$(id -u)" = "0" ]; then
         /opt/yamcs/src/main/resources \
         /opt/yamcs/target \
         2>/dev/null || true
+
+    # Shared volumes: set group to shared GID and setgid bit so new files
+    # inherit the shared group. In Kubernetes, fsGroup handles this instead.
+    if [ -n "${SHARED_GID}" ]; then
+        for dir in /opt/yamcs/src/main/yamcs/incoming /opt/yamcs/scripts; do
+            chgrp -R "${SHARED_GID}" "${dir}" 2>/dev/null || true
+            chmod -R g+rwX "${dir}" 2>/dev/null || true
+            find "${dir}" -type d -exec chmod g+s {} + 2>/dev/null || true
+        done
+    fi
+
     exec gosu "${SERVICE_UID}:${SERVICE_GID}" "$0" "$@"
 fi
 

@@ -41,6 +41,18 @@ RUN test -f /opt/yamcs/settings.xml || \
 # Compile and resolve dependencies (exec:java handles classpath via Maven)
 RUN mvn ${MAVEN_HTTPS_PROXY} compile -DskipTests -Dmaven.repo.local=/opt/yamcs/.m2/repository
 
+#--- SHARED GROUP (cross-service volume access; name from mission, GID always 10000)
+ARG MISSION_SC=mission-sc
+ARG SHARED_GID=10000
+
+RUN if getent group ${SHARED_GID} >/dev/null 2>&1; then \
+        groupmod -n ${MISSION_SC} $(getent group ${SHARED_GID} | cut -d: -f1); \
+    else \
+        groupadd -r -g ${SHARED_GID} ${MISSION_SC}; \
+    fi
+
+ENV SHARED_GID=${SHARED_GID}
+
 #--- SERVICE USER (override UID/GID at build time to match host or orchestrator)
 ARG SERVICE_UID=10001
 ARG SERVICE_GID=10001
@@ -49,7 +61,7 @@ ENV SERVICE_UID=${SERVICE_UID}
 ENV SERVICE_GID=${SERVICE_GID}
 
 RUN groupadd -r -g ${SERVICE_GID} yamcs && \
-    useradd -r -u ${SERVICE_UID} -g yamcs -d /opt/yamcs -s /sbin/nologin yamcs && \
+    useradd -r -u ${SERVICE_UID} -g yamcs -G ${MISSION_SC} -d /opt/yamcs -s /sbin/nologin yamcs && \
     mkdir -p /opt/yamcs/src/main/yamcs/mdb \
              /opt/yamcs/src/main/yamcs/etc \
              /opt/yamcs/src/main/yamcs/incoming \

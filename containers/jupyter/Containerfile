@@ -56,6 +56,18 @@ WORKDIR /opt/jupyter
 COPY entrypoint.sh /entrypoint.sh
 COPY jupyterhub_config.py /opt/jupyter/jupyterhub_config.py
 
+#--- SHARED GROUP (cross-service volume access; name from mission, GID always 10000)
+ARG MISSION_SC=mission-sc
+ARG SHARED_GID=10000
+
+RUN if getent group ${SHARED_GID} >/dev/null 2>&1; then \
+        groupmod -n ${MISSION_SC} $(getent group ${SHARED_GID} | cut -d: -f1); \
+    else \
+        groupadd -r -g ${SHARED_GID} ${MISSION_SC}; \
+    fi
+
+ENV SHARED_GID=${SHARED_GID}
+
 #--- SERVICE USER (override UID/GID at build time to match host or orchestrator)
 ARG SERVICE_UID=10003
 ARG SERVICE_GID=10003
@@ -64,7 +76,7 @@ ENV SERVICE_UID=${SERVICE_UID}
 ENV SERVICE_GID=${SERVICE_GID}
 
 RUN groupadd -r -g ${SERVICE_GID} jupyter && \
-    useradd -r -u ${SERVICE_UID} -g jupyter -d /opt/jupyter -s /sbin/nologin jupyter && \
+    useradd -r -u ${SERVICE_UID} -g jupyter -G ${MISSION_SC} -d /opt/jupyter -s /sbin/nologin jupyter && \
     mkdir -p /opt/jupyter /srv/procedures /srv/lib && \
     chown -R jupyter:jupyter /opt/jupyter /srv/procedures /srv/lib
 

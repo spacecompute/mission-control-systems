@@ -66,6 +66,18 @@ COPY entrypoint.sh /entrypoint.sh
 COPY index.js /opt/openmct/example/index.js
 COPY webpack.dev.mjs /opt/openmct/.webpack/webpack.dev.mjs
 
+#--- SHARED GROUP (cross-service volume access; name from mission, GID always 10000)
+ARG MISSION_SC=mission-sc
+ARG SHARED_GID=10000
+
+RUN if getent group ${SHARED_GID} >/dev/null 2>&1; then \
+        groupmod -n ${MISSION_SC} $(getent group ${SHARED_GID} | cut -d: -f1); \
+    else \
+        groupadd -r -g ${SHARED_GID} ${MISSION_SC}; \
+    fi
+
+ENV SHARED_GID=${SHARED_GID}
+
 #--- SERVICE USER (override UID/GID at build time to match host or orchestrator)
 ARG SERVICE_UID=10002
 ARG SERVICE_GID=10002
@@ -74,7 +86,7 @@ ENV SERVICE_UID=${SERVICE_UID}
 ENV SERVICE_GID=${SERVICE_GID}
 
 RUN groupadd -r -g ${SERVICE_GID} openmct && \
-    useradd -r -u ${SERVICE_UID} -g openmct -d /opt/openmct -s /sbin/nologin openmct && \
+    useradd -r -u ${SERVICE_UID} -g openmct -G ${MISSION_SC} -d /opt/openmct -s /sbin/nologin openmct && \
     mkdir -p /opt/openmct/example/displays && \
     chown -R openmct:openmct /opt/openmct /opt/nvm
 
