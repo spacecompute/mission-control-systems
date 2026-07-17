@@ -74,6 +74,13 @@ RUN if [ -f /tmp/requirements.txt ]; then \
         pip install --no-cache-dir -r /tmp/requirements.txt; \
     fi && rm -f /tmp/requirements.txt
 
+# Remove build-time dev packages and compiler toolchain (all pull in linux-libc-dev CVEs)
+RUN apt-get purge -y --auto-remove \
+        build-essential gcc g++ make \
+        libzmq3-dev libffi-dev libcurl4-openssl-dev libssl-dev \
+        ruby-dev r-base-dev && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /opt/jupyter
 
 # Default config (missions override via volume mount)
