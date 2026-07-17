@@ -40,8 +40,30 @@ COPY settings.xm[l] /opt/yamcs/
 RUN test -f /opt/yamcs/settings.xml || \
     echo "<settings><proxies></proxies></settings>" > /opt/yamcs/settings.xml
 
-# Compile and resolve dependencies (exec:java handles classpath via Maven)
-RUN mvn ${MAVEN_HTTPS_PROXY} compile -DskipTests -Dmaven.repo.local=/opt/yamcs/.m2/repository
+# Override vulnerable transitive deps pinned by upstream yamcs
+# HIGH:
+#   io.netty 4.1.130          → CVE-2026-42583, CVE-2026-33870, CVE-2026-42584,
+#                                CVE-2026-42587, CVE-2026-44249, CVE-2026-45416,
+#                                CVE-2026-50010
+#   protobuf-java 3.19.6      → CVE-2024-7254 (stale cache; yamcs uses 4.35.0)
+#   commons-io 2.11.0/2.13.0  → CVE-2024-47554 (stale cache; yamcs uses 2.15.1)
+#   plexus-utils <4.0.3       → CVE-2025-67030 (stale cache from Maven plugins)
+# NOT OVERRIDDEN:
+#   plexus-utils 3.5.1         → CVE-2025-67030
+#     shipped in /usr/share/maven/lib/ by the maven:3.9.9-eclipse-temurin-17 base
+#     image; cannot be removed without breaking Maven itself
+RUN sed -i 's|<version>4.1.130.Final</version>|<version>4.1.135.Final</version>|' /opt/yamcs/pom.xml
+
+# Compile and resolve dependencies, then purge vulnerable cached jars — all in one layer
+RUN mvn ${MAVEN_HTTPS_PROXY} compile -DskipTests -Dmaven.repo.local=/opt/yamcs/.m2/repository && \
+    rm -rf /opt/yamcs/.m2/repository/com/google/protobuf/protobuf-java/3.19.6 \
+           /opt/yamcs/.m2/repository/commons-io/commons-io/2.11.0 \
+           /opt/yamcs/.m2/repository/commons-io/commons-io/2.13.0 \
+           /opt/yamcs/.m2/repository/org/codehaus/plexus/plexus-utils/3.4.2 \
+           /opt/yamcs/.m2/repository/org/codehaus/plexus/plexus-utils/3.5.1 \
+           /opt/yamcs/.m2/repository/org/codehaus/plexus/plexus-utils/4.0.0 \
+           /opt/yamcs/.m2/repository/org/codehaus/plexus/plexus-utils/4.0.2 \
+           /opt/yamcs/.m2/repository/io/netty/*/4.1.130.Final
 
 #--- SHARED GROUP (cross-service volume access; name from mission, GID always 10000)
 ARG MISSION_SC=mission-sc
