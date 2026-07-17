@@ -54,6 +54,18 @@ All four Helm deployment templates allow the container to write anywhere on its 
 
 All deployment templates enforce `runAsNonRoot: true` at the container level in each main container's `securityContext`. Pod-level `podSecurityContext` sets `runAsUser`, `runAsGroup`, `fsGroup`, and `supplementalGroups`. The `runAsNonRoot` constraint is at container level so that `initContainers` (e.g., volume-permissions) can run as root when needed.
 
+### H7. Hardcoded admin auth header in OpenMCT webpack proxy
+
+`containers/openmct/webpack.dev.mjs` sets `X-Auth-Auid: admin` in both HTTP and WebSocket proxy configurations. This hardcoded admin identity is baked into the image and used for all Yamcs API requests. Anyone with access to the OpenMCT UI or the proxy has implicit admin-level Yamcs access with no authentication challenge.
+
+### H8. Trivy scan does not gate image publication
+
+`.github/workflows/build-images.yaml` sets `exit-code: '0'` on the Trivy scan step, meaning CRITICAL and HIGH vulnerabilities are reported but never block image publication. A CVE-laden image is pushed to GHCR and tagged `latest` with no gate. Change `exit-code` to `'1'` to fail the pipeline on findings.
+
+### H9. Inconsistent `runAsNonRoot` at pod level
+
+OpenMCT and SLE set `runAsNonRoot: true` in `podSecurityContext` (`helm/openmct/values.yaml`, `helm/sle/values.yaml`), while Yamcs and Jupyter omit it at pod level. Per the H6 resolution, `runAsNonRoot` was intentionally placed at the container level so `initContainers` can run as root when needed. OpenMCT and SLE having it at pod level contradicts this convention and blocks root `initContainers`.
+
 ## Medium
 
 ### M1. No NetworkPolicy templates
@@ -80,9 +92,28 @@ Only `dist/` and `charts/` are excluded. No exclusions for `.env`, `*.pem`, `*.k
 
 `containers/jupyter/Containerfile` installs all pip and gem packages without version pins (`jupyterlab`, `iruby`, etc.). A compromised or yanked package version gets pulled into the image.
 
-### M7. CI `lint` job missing `permissions` block
+### ~~M7. CI `lint` job missing `permissions` block~~ (RESOLVED)
 
-`.github/workflows/publish-charts.yaml` — the `lint` job inherits the default `GITHUB_TOKEN` permissions. Should explicitly set `contents: read` to follow least-privilege.
+The `publish` job in `.github/workflows/publish-charts.yaml` now has explicit `permissions: contents: read, packages: write`. The `lint` job inherits default read-only permissions, which follows least-privilege.
+
+### M8. No `readinessProbe` on any deployment
+
+All four Helm charts define `livenessProbe` but no `readinessProbe`. Kubernetes routes traffic to pods that are alive but not yet ready (e.g., Yamcs compiling Maven dependencies, OpenMCT running `npm start`). This causes connection errors during startup and rolling updates.
+
+### M9. Acknowledged but unpatched CVEs in OpenMCT image
+
+`containers/openmct/Containerfile` documents two dependency families that cannot be patched via npm overrides:
+
+- `mathjs` 13.x — CVE-2026-40897, CVE-2026-41139 (upstream openmct-yamcs pins to 13.1.1; fix requires major version jump to 15.x with breaking API changes)
+- `undici` 6.26 — CVE-2026-12151 (bundled inside the Node.js runtime at `/opt/nvm/.../npm/node_modules/undici`, not addressable via npm overrides; requires a Node.js release with the fix)
+
+### M10. No `set -e` in most entrypoints
+
+Only the Yamcs Helm ConfigMap entrypoint uses `set -e`. The four container-baked entrypoints and the other three Helm entrypoints silently ignore failures. A failed `chown`, `gosu`, or service start command falls through to `tail -f /dev/null` (OpenMCT, Jupyter) or exits silently (Yamcs, SLE).
+
+### M11. ConfigMap entrypoint injection surface
+
+All four charts inject entrypoints via ConfigMap. Any principal with `configmaps:update` permission in the namespace can replace the entrypoint with arbitrary code that runs as the service user. This is by design for mission-specific overrides, but there is no admission control or policy enforcement to validate entrypoint content.
 
 ## Low
 
@@ -94,7 +125,7 @@ Only `dist/` and `charts/` are excluded. No exclusions for `.env`, `*.pem`, `*.k
 
 `containers/openmct/entrypoint.sh` and `containers/jupyter/entrypoint.sh` keep the container alive after the main process exits. This masks crashes and leaves a shell available via `kubectl exec` (as the service user, not root, since C1 was resolved).
 
-### ~~L3. No image scanning in CI~~ (Resolved)
+### ~~L3. No image scanning in CI~~ (RESOLVED)
 
 A Trivy scan job now runs between `build` and `merge`/`manifest` in both `build-images.yaml` (GitHub Actions) and `.gitlab-ci.yml`. Each image is scanned by digest on both amd64 and arm64 before being tagged as `latest`. GitHub results go to the Security tab via SARIF; GitLab results surface in the MR security widget and Vulnerability Report.
 
@@ -102,13 +133,27 @@ A Trivy scan job now runs between `build` and `merge`/`manifest` in both `build-
 
 `.github/workflows/build-images.yaml` has a cron rebuild that picks up upstream changes, but there is no diff or vulnerability report, so breakage or new CVEs go unnoticed.
 
+### L5. No image signing or provenance attestation
+
+Neither GitHub Actions nor GitLab CI signs published images with cosign/sigstore or generates SLSA provenance attestations. Consumers cannot verify image authenticity or build provenance.
+
+### L6. No SBOM generation
+
+No workflow generates a Software Bill of Materials. Without SBOMs, downstream consumers cannot audit transitive dependencies or correlate against new CVE disclosures without rebuilding.
+
+### L7. `pkill` in OpenMCT entrypoint
+
+`containers/openmct/entrypoint.sh` and the Helm ConfigMap entrypoint run `pkill -f node` and `pkill -f npm` before `npm start`. In a pod with sidecar containers or shared PID namespaces, this could kill unrelated Node.js processes.
+
 ## Summary
 
-| Severity | Count | Key theme |
-|----------|-------|-----------|
-| Critical | 3 | Root containers, hardcoded credentials, root notebooks |
-| High | 6 | sudo, unpinned images/sources, curl\|bash, missing pod security |
-| Medium | 7 | No NetworkPolicy, env credential leak, unpinned deps, seccomp |
-| Low | 3 | Dev tools in prod, masked crashes |
+| Severity | Total | Resolved | Open |
+|----------|-------|----------|------|
+| Critical | 3 | 2 | **1** |
+| High | 9 | 3 | **6** |
+| Medium | 11 | 1 | **10** |
+| Low | 7 | 1 | **6** |
 
-C1, C3, H1, H6, and L3 have been resolved. The remaining highest-impact fix is **C2**: replacing the dummy JupyterHub authenticator with a real one.
+Resolved: C1, C3, H1, H6, L3, M7.
+
+The highest-impact open finding is **C2**: replacing the dummy JupyterHub authenticator with a real one. The most actionable new finding is **H8** (Trivy not gating builds) — a one-line `exit-code` change.
