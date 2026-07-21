@@ -27,6 +27,7 @@ seaborn
 ipywidgets
 jupyterlab-git
 jupytext>=1.16.0
+jupyter_scheduler
 tabulate
 tqdm
 
